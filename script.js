@@ -20,6 +20,8 @@ const storage = {
   records: "kaoyan.records.v2",
   account: "kaoyan.account.v2",
   exams: "kaoyan.exams.v2",
+  supabase: "kaoyan.supabase.v2",
+  ai: "kaoyan.ai.v2",
 };
 
 const quotes = [
@@ -75,6 +77,20 @@ function records() {
   return getJson(storage.records, []);
 }
 
+function supabaseConfig() {
+  return getJson(storage.supabase, { url: "", anonKey: "" });
+}
+
+function accountConfig() {
+  return getJson(storage.account, { name: "", email: "", mode: "local" });
+}
+
+function supabaseClient() {
+  const config = supabaseConfig();
+  if (!config.url || !config.anonKey || !window.supabase) return null;
+  return window.supabase.createClient(config.url, config.anonKey);
+}
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -90,7 +106,16 @@ function boot() {
   $("#setupMajor").value = savedProfile.major;
   $("#setupDirection").value = savedProfile.direction;
   $("#setupExamDate").value = savedProfile.examDate;
-  $("#accountName").value = getJson(storage.account, { name: "" }).name || "";
+  const account = accountConfig();
+  const config = supabaseConfig();
+  $("#accountName").value = account.name || "";
+  $("#loginEmail").value = account.email || "";
+  $("#syncMode").value = account.mode || "local";
+  $("#supabaseUrl").value = config.url || "";
+  $("#supabaseAnonKey").value = config.anonKey || "";
+  const ai = getJson(storage.ai, { provider: "local", apiKey: "" });
+  $("#aiProvider").value = ai.provider || "local";
+  $("#aiApiKey").value = ai.apiKey || "";
   $("#setupScreen").classList.toggle("hidden", Boolean(localStorage.getItem(storage.profile)));
   renderAll();
 }
@@ -177,7 +202,7 @@ async function fileToDataUrl(file) {
 
 async function saveRecord() {
   const files = Array.from($("#recordImages").files || []);
-  const images = await Promise.all(files.slice(0, 4).map(fileToDataUrl));
+  const images = await saveImages(files.slice(0, 4));
   const all = records();
   const record = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
@@ -193,8 +218,49 @@ async function saveRecord() {
   };
   all.unshift(record);
   setJson(storage.records, all.slice(0, 300));
+  await saveRecordToCloud(record);
   $("#recordImages").value = "";
   renderAll();
+}
+
+async function saveImages(files) {
+  const client = supabaseClient();
+  const account = accountConfig();
+  if (account.mode !== "supabase" || !client) {
+    return Promise.all(files.map(fileToDataUrl));
+  }
+
+  const uploaded = [];
+  for (const file of files) {
+    const path = `${account.name || "default"}/${Date.now()}-${file.name}`;
+    const result = await client.storage.from("record-images").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (result.error) {
+      uploaded.push(await fileToDataUrl(file));
+      continue;
+    }
+    const { data } = client.storage.from("record-images").getPublicUrl(path);
+    uploaded.push(data.publicUrl);
+  }
+  return uploaded;
+}
+
+async function saveRecordToCloud(record) {
+  const client = supabaseClient();
+  const account = accountConfig();
+  if (account.mode !== "supabase" || !client || !account.name) return;
+  const { error } = await client.from("learning_records").insert({
+    account_name: account.name,
+    record_date: record.date,
+    payload: record,
+  });
+  if (error) {
+    $("#syncNote").textContent = `云同步失败：${error.message}`;
+  } else {
+    $("#syncNote").textContent = "今日记录已保存到云端。";
+  }
 }
 
 function renderImages() {
@@ -243,8 +309,59 @@ function analyzeRecords(inputRecords = records()) {
   return `近 ${recent.length} 次平均完成率 ${average}%。${weak}${imageAdvice}`;
 }
 
-function runAgents() {
+async function runAgents() {
+  const ai = getJson(storage.ai, { provider: "local", apiKey: "" });
+  if (ai.provider !== "local" && ai.apiKey) {
+    $("#agentOutput").textContent = "正在调用 AI 分析最近学习记录...";
+    const answer = await callRemoteAi(ai);
+    $("#agentOutput").textContent = answer || `AI 项目组分析：\n${analyzeRecords()}`;
+    return;
+  }
   $("#agentOutput").textContent = `AI 项目组分析：\n${analyzeRecords()}\n\n明日建议：上午优先 619 物化计算题，下午推进 820 有机机理和合成，晚上保留英语阅读与政治选择题。每周固定一次四科模拟。`;
+}
+
+async function callRemoteAi(ai) {
+  const prompt = `你是考研学习项目经理。请分析这些学习记录，输出明日计划、薄弱点、错题复盘和本周考试建议：${JSON.stringify(records().slice(0, 10))}`;
+  try {
+    if (ai.provider === "gemini") {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${ai.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        }
+      );
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text;
+    }
+    if (ai.provider === "openrouter") {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ai.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-flash-1.5",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content;
+    }
+  } catch (error) {
+    return `远程 AI 调用失败：${error.message}\n\n已切换本地规则分析：\n${analyzeRecords()}`;
+  }
+  return "";
+}
+
+function saveAiConfig() {
+  setJson(storage.ai, {
+    provider: $("#aiProvider").value,
+    apiKey: $("#aiApiKey").value.trim(),
+  });
+  $("#agentOutput").textContent = "AI 配置已保存。未填写 API Key 时会继续使用本地规则 AI。";
 }
 
 function createWeeklyExam() {
@@ -313,12 +430,59 @@ function showResearchResult() {
 }
 
 function saveAccount() {
-  const account = { name: $("#accountName").value.trim(), mode: $("#syncMode").value };
+  const account = {
+    name: $("#accountName").value.trim(),
+    email: $("#loginEmail").value.trim(),
+    mode: $("#syncMode").value,
+  };
+  const config = {
+    url: $("#supabaseUrl").value.trim(),
+    anonKey: $("#supabaseAnonKey").value.trim(),
+  };
   setJson(storage.account, account);
+  setJson(storage.supabase, config);
   $("#syncNote").textContent =
     account.mode === "supabase"
-      ? "已选择云同步模式。下一步需要填写 Supabase URL、anon key，并创建 records/storage 表。"
+      ? "已选择云同步模式。请确认 Supabase 表、Auth 和 record-images bucket 已创建。"
       : "当前为本机模式：同一浏览器保留记录，不跨设备自动同步。";
+}
+
+async function sendLoginLink() {
+  saveAccount();
+  const client = supabaseClient();
+  const account = accountConfig();
+  if (!client || !account.email) {
+    $("#syncNote").textContent = "请先填写 Supabase URL、anon key 和邮箱。";
+    return;
+  }
+  const { error } = await client.auth.signInWithOtp({
+    email: account.email,
+    options: { emailRedirectTo: location.href },
+  });
+  $("#syncNote").textContent = error ? `登录链接发送失败：${error.message}` : "登录链接已发送，请到邮箱点击确认。";
+}
+
+async function loadCloudRecords() {
+  saveAccount();
+  const client = supabaseClient();
+  const account = accountConfig();
+  if (!client || !account.name) {
+    $("#syncNote").textContent = "请先填写 Supabase 配置和学习账号。";
+    return;
+  }
+  const { data, error } = await client
+    .from("learning_records")
+    .select("payload, created_at")
+    .eq("account_name", account.name)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  if (error) {
+    $("#syncNote").textContent = `读取云端失败：${error.message}`;
+    return;
+  }
+  setJson(storage.records, data.map((row) => row.payload));
+  $("#syncNote").textContent = `已同步 ${data.length} 条云端记录。`;
+  renderAll();
 }
 
 function exportHistory() {
@@ -359,10 +523,13 @@ $("#generatePlan").addEventListener("click", renderSchedule);
 $("#saveRecord").addEventListener("click", saveRecord);
 $("#recordImages").addEventListener("change", renderImages);
 $("#runAgents").addEventListener("click", runAgents);
+$("#saveAiConfig").addEventListener("click", saveAiConfig);
 $("#checkAdmission").addEventListener("click", () => loadAdmissionStatus(true));
 $("#createWeeklyExam").addEventListener("click", createWeeklyExam);
 $("#saveExamSummary").addEventListener("click", saveExamSummary);
 $("#saveAccount").addEventListener("click", saveAccount);
+$("#sendLoginLink").addEventListener("click", sendLoginLink);
+$("#loadCloudRecords").addEventListener("click", loadCloudRecords);
 $("#historyFilter").addEventListener("change", renderHistory);
 $("#historySearch").addEventListener("input", renderHistory);
 $("#exportHistory").addEventListener("click", exportHistory);

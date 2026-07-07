@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>考研长程备考指挥中心</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
     <section class="setup-screen" id="setupScreen">
@@ -64,16 +65,32 @@
             <input id="accountName" placeholder="例如 wzm170" />
           </label>
           <label>
+            邮箱登录
+            <input id="loginEmail" type="email" placeholder="your@email.com" />
+          </label>
+          <label>
             同步模式
             <select id="syncMode">
               <option value="local">本机模式</option>
               <option value="supabase">Supabase 云同步</option>
             </select>
           </label>
+          <label>
+            Supabase URL
+            <input id="supabaseUrl" placeholder="https://xxxx.supabase.co" />
+          </label>
+          <label>
+            Supabase anon key
+            <input id="supabaseAnonKey" placeholder="eyJ..." />
+          </label>
           <div class="sync-note" id="syncNote">
             当前记录保存在浏览器。本机模式不跨设备；云同步需要配置 Supabase 免费项目。
           </div>
-          <button id="saveAccount">保存账号设置</button>
+          <div class="button-row account-actions">
+            <button id="saveAccount">保存设置</button>
+            <button id="sendLoginLink">发送登录链接</button>
+            <button id="loadCloudRecords">同步云端记录</button>
+          </div>
         </section>
 
         <section class="panel">
@@ -164,6 +181,21 @@
               <h2>AI 学习记录分析</h2>
             </div>
             <button id="runAgents">分析最近记录</button>
+          </div>
+          <div class="ai-config">
+            <label>
+              AI 提供方
+              <select id="aiProvider">
+                <option value="local">本地规则 AI（免费）</option>
+                <option value="gemini">Gemini API（有免费额度）</option>
+                <option value="openrouter">OpenRouter（可选免费模型）</option>
+              </select>
+            </label>
+            <label>
+              API Key
+              <input id="aiApiKey" placeholder="不填写则使用本地规则 AI" />
+            </label>
+            <button id="saveAiConfig">保存 AI 配置</button>
           </div>
           <div class="agent-output" id="agentOutput">
             内置免费规则 AI 会分析完成率、连续性、卡点与图片记录数量，生成下一步安排。接入免费额度 API 后可升级为大模型分析。
