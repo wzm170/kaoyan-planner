@@ -1,291 +1,343 @@
-const phaseTasks = {
-  foundation: {
-    name: "基础搭建",
-    focus: "物化热力学",
-    physical: "热力学第一、第二定律；状态函数、偏摩尔量、化学势；完成对应例题与基础计算。",
-    organic: "结构与酸碱、立体化学、取代/消除、羰基亲核加成；建立反应卡片。",
-    tomorrow: "热力学公式推导 + 羰基反应条件辨析",
-  },
-  intensive: {
-    name: "强化一轮",
-    focus: "动力学与合成",
-    physical: "化学动力学、复杂反应速率方程、阿伦尼乌斯公式；做综合计算题。",
-    organic: "芳香性、周环反应、自由基、重排；按机理类型归纳题型。",
-    tomorrow: "动力学综合题 + 周环反应选择规则",
-  },
-  pastpaper: {
-    name: "真题强化",
-    focus: "真题限时训练",
-    physical: "按年份刷 619 真题或同类题，记录失分点、公式调用和计算速度。",
-    organic: "按年份刷 820 真题，重点整理合成路线、机理解释和谱图题。",
-    tomorrow: "一套专业课限时训练 + 错题二刷",
-  },
-  sprint: {
-    name: "模拟冲刺",
-    focus: "整卷模拟",
-    physical: "限时完成物化模拟卷，复盘大题步骤、单位、边界条件。",
-    organic: "限时完成有机模拟卷，复盘机理箭头、试剂选择和路线可行性。",
-    tomorrow: "模拟卷订正 + 高频错题回炉",
-  },
+const defaultProfile = {
+  school: "中国科学院大学 上海有机化学研究所",
+  major: "070303 有机化学",
+  direction: "物理有机/物理化学强化方向",
+  examDate: "2026-12-19",
+  subjects: [
+    { code: "101", name: "思想政治理论", score: 100 },
+    { code: "201", name: "英语一", score: 100 },
+    { code: "619", name: "物理化学(甲)", score: 150 },
+    { code: "820", name: "有机化学", score: 150 },
+  ],
+  sources: [
+    "https://admission.ucas.ac.cn/info/ZhaoshengDanweiDetail/9e780c52-baf5-4020-b453-bc4510579559/8003512026",
+    "https://sioc.cas.cn/zs/",
+  ],
 };
 
-const baseSchedule = [
-  ["08:00-10:00", "619 物理化学(甲)", "physical"],
-  ["10:15-12:00", "物化习题与错题", "physical"],
-  ["14:00-16:00", "820 有机化学", "organic"],
-  ["16:15-17:30", "有机题、合成题、谱图题", "organic"],
-  ["19:00-20:30", "英语一阅读与长难句", "english"],
-  ["20:45-21:30", "政治选择题或薄弱点补强", "politics"],
-  ["21:30-22:00", "AI 复盘与明日计划", "english"],
+const storage = {
+  profile: "kaoyan.profile.v2",
+  records: "kaoyan.records.v2",
+  account: "kaoyan.account.v2",
+  exams: "kaoyan.exams.v2",
+};
+
+const quotes = [
+  "今天的目标不是把所有事做完，而是把最关键的一步做扎实。",
+  "分数来自每天可复现的动作，不来自临时的情绪。",
+  "错题不是失败记录，是下一次提分的路线图。",
+  "少一点泛泛努力，多一点可检查的完成。",
+  "把今天的四小时学稳，比幻想明天十小时更有效。",
+  "连续性本身就是竞争力。",
+  "每一道订正清楚的题，都会在考场上还给你时间。",
 ];
 
-const overviewSeed = [
-  ["7月第1周", "基础搭建", "热力学基础、化学势", "结构酸碱、立体化学", "阅读 4 篇 + 单词", "马原导论", "80%", "热力学推导"],
-  ["7月第2周", "基础搭建", "相平衡、电化学", "取代消除、羰基", "阅读错因表", "马原选择题", "85%", "相图与羰基"],
-  ["8月第1周", "基础收束", "动力学入门", "芳香性、定位效应", "翻译训练", "史纲框架", "88%", "动力学速率方程"],
+const phaseTasks = [
+  {
+    range: [7, 8],
+    focus: "物化热力学与有机基础",
+    physical: "热力学第一、第二定律；化学势、偏摩尔量、相平衡；完成基础例题和 5 道计算题。",
+    organic: "结构、酸碱、立体化学、取代消除、羰基亲核加成；整理 6 张反应卡。",
+  },
+  {
+    range: [9, 10],
+    focus: "动力学、有机机理与真题专题",
+    physical: "动力学、电化学、量子与统计热力学专题训练；建立公式调用清单。",
+    organic: "芳香性、周环、自由基、重排、合成路线；按题型做真题归纳。",
+  },
+  {
+    range: [11, 12],
+    focus: "整卷模拟与查漏补缺",
+    physical: "每周至少 2 次专业课限时训练；复盘大题步骤、单位、边界条件。",
+    organic: "每周至少 2 次合成与机理综合训练；复盘试剂选择和路线可行性。",
+  },
 ];
 
-const storageKey = "sioc-kaoyan-learning-records";
+const $ = (selector) => document.querySelector(selector);
 
-function $(selector) {
-  return document.querySelector(selector);
-}
-
-function todayStamp() {
-  return new Date().toLocaleDateString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
-
-function loadRecords() {
+function getJson(key, fallback) {
   try {
-    return JSON.parse(localStorage.getItem(storageKey)) || [];
+    return JSON.parse(localStorage.getItem(key)) ?? fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
-function saveRecords(records) {
-  localStorage.setItem(storageKey, JSON.stringify(records));
+function setJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
-function createRecord(source) {
-  const phase = activePhase();
-  return {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    date: todayStamp(),
-    time: new Date().toLocaleTimeString("zh-CN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    source,
-    phase: phase.name,
-    completion: Number($("#completion").value || 0),
-    physicalIssue: $("#physicalIssue").value.trim() || "按计划推进",
-    organicIssue: $("#organicIssue").value.trim() || "按计划推进",
-    tomorrowHours: Number($("#tomorrowHours").value || $("#studyHours").value || 8),
-    tomorrowFocus: phase.tomorrow,
-  };
+function profile() {
+  return getJson(storage.profile, defaultProfile);
 }
 
-function addLearningRecord(source) {
-  const records = loadRecords();
-  records.unshift(createRecord(source));
-  saveRecords(records.slice(0, 300));
+function records() {
+  return getJson(storage.records, []);
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function currentPhase() {
+  const month = new Date().getMonth() + 1;
+  return phaseTasks.find((phase) => month >= phase.range[0] && month <= phase.range[1]) ?? phaseTasks[0];
+}
+
+function boot() {
+  const savedProfile = profile();
+  $("#setupSchool").value = savedProfile.school;
+  $("#setupMajor").value = savedProfile.major;
+  $("#setupDirection").value = savedProfile.direction;
+  $("#setupExamDate").value = savedProfile.examDate;
+  $("#accountName").value = getJson(storage.account, { name: "" }).name || "";
+  $("#setupScreen").classList.toggle("hidden", Boolean(localStorage.getItem(storage.profile)));
+  renderAll();
+}
+
+function renderAll() {
+  renderHeader();
+  renderSubjects();
+  renderSchedule();
+  renderImages();
   renderHistory();
+  renderStreak();
+  loadAdmissionStatus(false);
 }
 
-function updateCountdown() {
-  const examDate = new Date("2026-12-19T08:30:00+08:00");
-  const today = new Date();
-  const days = Math.max(0, Math.ceil((examDate - today) / 86400000));
+function renderHeader() {
+  const data = profile();
+  const examDate = new Date(`${data.examDate}T08:30:00+08:00`);
+  const days = Math.max(0, Math.ceil((examDate - new Date()) / 86400000));
+  const quoteIndex = Math.floor(Date.now() / 86400000) % quotes.length;
   $("#countdown").textContent = `${days} 天`;
+  $("#examDateLabel").textContent = data.examDate;
+  $("#targetLine").textContent = `${data.school} · ${data.major}`;
+  $("#dailyQuote").textContent = quotes[quoteIndex];
 }
 
-function activePhase() {
-  return phaseTasks[$("#phaseSelect").value];
-}
-
-function renderSchedule() {
-  const phase = activePhase();
-  const hours = Number($("#studyHours").value);
-  const schedule = $("#schedule");
-  $("#dailyFocus").textContent = phase.focus;
-  $("#targetRate").textContent = hours >= 9 ? "85%" : "75%";
-
-  schedule.innerHTML = baseSchedule
-    .map(([time, title, type]) => {
-      const detail =
-        type === "physical"
-          ? phase.physical
-          : type === "organic"
-            ? phase.organic
-            : title.includes("英语")
-              ? "阅读真题 1-2 篇，拆解错因；单词复习保持滚动，不单独堆时间。"
-              : title.includes("政治")
-                ? "完成 30-50 道选择题，错题只记概念误区，不做长篇摘抄。"
-                : "提交完成率、卡点和明日可用时间，由 AI 项目组生成调整建议。";
-      const label =
-        type === "physical"
-          ? "物化"
-          : type === "organic"
-            ? "有机"
-            : type === "english"
-              ? "英语/复盘"
-              : "政治";
-      return `<article class="schedule-item">
-        <time>${time}</time>
-        <div>
-          <strong>${title}</strong>
-          <p>${detail}</p>
-        </div>
-        <span class="badge ${type}">${label}</span>
-      </article>`;
-    })
-    .join("");
-}
-
-function renderOverview() {
-  const rows = $("#overviewRows");
-  rows.innerHTML = overviewSeed
-    .map(
-      (row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`
+function renderSubjects() {
+  $("#subjectList").innerHTML = profile()
+    .subjects.map(
+      (subject) => `<article>
+        <span>${subject.code}</span>
+        <strong>${subject.name}</strong>
+        <small>${subject.score} 分</small>
+      </article>`
     )
     .join("");
 }
 
-function addOverviewRow() {
-  const phase = activePhase();
-  const completion = Number($("#completion").value || 0);
-  const today = new Date().toLocaleDateString("zh-CN", {
-    month: "numeric",
-    day: "numeric",
-  });
-  overviewSeed.unshift([
-    today,
-    phase.name,
-    "按今日计划推进，重点回看错题",
-    "完成机理卡片与合成题",
-    "阅读 + 单词滚动",
-    "选择题训练",
-    `${completion}%`,
-    phase.tomorrow,
-  ]);
-  renderOverview();
-  addLearningRecord("总览表记录");
+function renderSchedule() {
+  const phase = currentPhase();
+  const schedule = [
+    ["08:00-10:00", "619 物理化学(甲)", phase.physical, "physical"],
+    ["10:15-12:00", "物化习题与错题复盘", "限时训练，错题必须写明公式选择、单位和计算断点。", "physical"],
+    ["14:00-16:00", "820 有机化学", phase.organic, "organic"],
+    ["16:15-17:30", "有机真题/合成/谱图", "至少完成 2 道综合题，记录机理箭头和条件误区。", "organic"],
+    ["19:00-20:30", "英语一", "阅读真题 1 篇，拆长难句，错因只归入定位、逻辑、词义三类。", "english"],
+    ["20:45-21:30", "政治", "选择题 30-50 道，记录概念混淆点。", "politics"],
+    ["21:30-22:00", "AI 复盘", "提交学习记录，生成明日连续计划。", "ai"],
+  ];
+  $("#dailyFocus").textContent = phase.focus;
+  $("#schedule").innerHTML = schedule
+    .map(
+      ([time, title, detail, type]) => `<article class="schedule-item">
+        <time>${time}</time>
+        <div><strong>${title}</strong><p>${detail}</p></div>
+        <span class="badge ${type}">${typeLabel(type)}</span>
+      </article>`
+    )
+    .join("");
 }
 
-function runAgents() {
-  const completion = Number($("#completion").value || 0);
-  const physicalIssue = $("#physicalIssue").value.trim();
-  const organicIssue = $("#organicIssue").value.trim();
-  const tomorrowHours = Number($("#tomorrowHours").value || 8);
-  const phase = activePhase();
-  const load = tomorrowHours >= 9 ? "正常推进" : "压缩任务量，保专业课主线";
-  const completionAdvice =
-    completion >= 85
-      ? "完成率达标，明天增加 30 分钟限时题训练。"
-      : completion >= 65
-        ? "完成率中等，明天保留核心任务，减少新知识扩展。"
-        : "完成率偏低，明天只保留高优先级任务并补今日错题。";
+function typeLabel(type) {
+  return { physical: "物化", organic: "有机", english: "英语", politics: "政治", ai: "AI" }[type] || type;
+}
 
-  $("#agentOutput").textContent = `AI 项目组决议：
-1. 总项目经理：${load}；${completionAdvice}
-2. 物化教练：围绕「${physicalIssue || phase.physical}」安排 40 分钟公式复述和 5 道同类题。
-3. 有机教练：围绕「${organicIssue || phase.organic}」整理 6 张反应卡，至少做 2 道合成拆解。
-4. 英语教练：保持阅读真题 1 篇，错题归因限定为定位、逻辑、词义三类。
-5. 数据管理员：今日记录已可加入总览表，明日重点为「${phase.tomorrow}」。`;
-  addLearningRecord("每日反馈");
+function renderStreak() {
+  const days = new Set(records().map((record) => record.date));
+  let streak = 0;
+  const cursor = new Date();
+  while (days.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  $("#streakDays").textContent = `${streak} 天`;
+}
+
+async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveRecord() {
+  const files = Array.from($("#recordImages").files || []);
+  const images = await Promise.all(files.slice(0, 4).map(fileToDataUrl));
+  const all = records();
+  const record = {
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    date: todayIso(),
+    time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+    completion: Number($("#completion").value || 0),
+    minutes: Number($("#studyMinutes").value || 0),
+    physicalIssue: $("#physicalIssue").value.trim(),
+    organicIssue: $("#organicIssue").value.trim(),
+    publicIssue: $("#publicIssue").value.trim(),
+    images,
+    aiAdvice: analyzeRecords([...all, { completion: Number($("#completion").value || 0), images }]),
+  };
+  all.unshift(record);
+  setJson(storage.records, all.slice(0, 300));
+  $("#recordImages").value = "";
+  renderAll();
+}
+
+function renderImages() {
+  const files = Array.from($("#recordImages")?.files || []);
+  $("#imagePreview").innerHTML = files.length
+    ? files.map((file) => `<span>${file.name}</span>`).join("")
+    : "<span>可上传错题、笔记、计划截图。静态版会存入当前浏览器；云同步需接 Supabase Storage。</span>";
 }
 
 function renderHistory() {
-  const filter = $("#historyFilter").value;
-  const keyword = $("#historySearch").value.trim().toLowerCase();
-  const records = loadRecords().filter((record) => {
-    const text = [
-      record.phase,
-      record.physicalIssue,
-      record.organicIssue,
-      record.tomorrowFocus,
-      record.source,
-    ]
+  const keyword = ($("#historySearch")?.value || "").trim().toLowerCase();
+  const filter = $("#historyFilter")?.value || "all";
+  const filtered = records().filter((record) => {
+    const text = [record.date, record.physicalIssue, record.organicIssue, record.publicIssue, record.aiAdvice]
       .join(" ")
       .toLowerCase();
-    const matchesKeyword = !keyword || text.includes(keyword);
-    const matchesFilter =
-      filter === "all" ||
-      (filter === "physical" && record.physicalIssue !== "按计划推进") ||
-      (filter === "organic" && record.organicIssue !== "按计划推进") ||
-      (filter === "low" && record.completion < 70);
-    return matchesKeyword && matchesFilter;
+    return (!keyword || text.includes(keyword)) &&
+      (filter === "all" || (filter === "low" && record.completion < 70) || (filter === "image" && record.images?.length));
   });
-
-  $("#historyList").innerHTML = records.length
-    ? records
+  $("#historyList").innerHTML = filtered.length
+    ? filtered
         .map(
           (record) => `<article class="history-item">
-            <div class="history-date">
-              <strong>${record.date}</strong>
-              <span>${record.time} · ${record.source}</span>
-              <span>${record.phase}</span>
-            </div>
+            <div class="history-date"><strong>${record.date}</strong><span>${record.time}</span><span>${record.minutes} 分钟</span></div>
             <div class="history-body">
-              <p><strong>物化：</strong>${record.physicalIssue}</p>
-              <p><strong>有机：</strong>${record.organicIssue}</p>
-              <p><strong>明日：</strong>${record.tomorrowHours} 小时；${record.tomorrowFocus}</p>
+              <p><strong>物化：</strong>${record.physicalIssue || "无"}</p>
+              <p><strong>有机：</strong>${record.organicIssue || "无"}</p>
+              <p><strong>公共课：</strong>${record.publicIssue || "无"}</p>
+              <p><strong>AI：</strong>${record.aiAdvice || "待分析"}</p>
+              <div class="thumbs">${(record.images || []).map((src) => `<img src="${src}" alt="学习记录图片" />`).join("")}</div>
             </div>
             <span class="history-rate ${record.completion < 70 ? "low" : ""}">${record.completion}%</span>
           </article>`
         )
         .join("")
-    : `<div class="empty-state">暂无匹配记录。提交每日反馈或添加今日记录后会自动保存。</div>`;
+    : '<div class="empty-state">暂无记录。先保存一次今日学习记录。</div>';
 }
 
-function clearHistory() {
-  if (!confirm("确定清空所有过往学习记录吗？")) {
-    return;
+function analyzeRecords(inputRecords = records()) {
+  const recent = inputRecords.slice(0, 7);
+  if (!recent.length) return "暂无记录。先连续记录 3 天，再分析趋势。";
+  const average = Math.round(recent.reduce((sum, record) => sum + Number(record.completion || 0), 0) / recent.length);
+  const imageCount = recent.reduce((sum, record) => sum + (record.images?.length || 0), 0);
+  const weak = average < 70 ? "完成率偏低，明天减少新知识，把物化错题和有机机理订正放在第一优先级。" : "完成率可接受，明天保留新知识推进，同时安排 30 分钟错题回炉。";
+  const imageAdvice = imageCount ? "图片记录已纳入复盘，建议每张错题图补一句错因。" : "缺少图片证据，建议上传错题或笔记截图，让复盘更可追踪。";
+  return `近 ${recent.length} 次平均完成率 ${average}%。${weak}${imageAdvice}`;
+}
+
+function runAgents() {
+  $("#agentOutput").textContent = `AI 项目组分析：\n${analyzeRecords()}\n\n明日建议：上午优先 619 物化计算题，下午推进 820 有机机理和合成，晚上保留英语阅读与政治选择题。每周固定一次四科模拟。`;
+}
+
+function createWeeklyExam() {
+  const exams = [
+    ["政治", "60 分钟", "选择题 50 道 + 错题概念归因"],
+    ["英语一", "90 分钟", "阅读 4 篇 + 翻译 1 段"],
+    ["619 物理化学(甲)", "150 分钟", "热力学/动力学/电化学/量子统计综合卷"],
+    ["820 有机化学", "150 分钟", "机理、合成、谱图、反应条件综合卷"],
+  ];
+  $("#weeklyExam").innerHTML = exams
+    .map(([name, time, task]) => `<article><span>${time}</span><strong>${name}</strong><p>${task}</p></article>`)
+    .join("");
+}
+
+function saveExamSummary() {
+  const total =
+    Number($("#scorePolitics").value || 0) +
+    Number($("#scoreEnglish").value || 0) +
+    Number($("#scorePhysical").value || 0) +
+    Number($("#scoreOrganic").value || 0);
+  const reflection = $("#examReflection").value.trim();
+  const exams = getJson(storage.exams, []);
+  exams.unshift({ date: todayIso(), total, reflection });
+  setJson(storage.exams, exams);
+  $("#examAdvice").textContent = `本次总分 ${total}/500。AI 考试官建议：先处理最影响总分的专业课失分点；${reflection || "补充具体失分原因后可生成更细计划。"}`;
+}
+
+async function loadAdmissionStatus(showQuiet) {
+  const box = $("#admissionAlerts");
+  try {
+    const response = await fetch(`admissions-status.json?t=${Date.now()}`);
+    if (!response.ok) throw new Error("status missing");
+    const data = await response.json();
+    if (data.changed) {
+      box.innerHTML = `<article class="notice danger"><strong>招生信息有变化</strong><p>${data.summary}</p><a href="${data.source}" target="_blank" rel="noreferrer">打开来源</a></article>`;
+    } else if (showQuiet) {
+      box.innerHTML = `<article class="notice"><strong>暂无变化</strong><p>最近检查：${data.checkedAt || "未知"}</p></article>`;
+    } else {
+      box.innerHTML = "";
+    }
+  } catch {
+    if (showQuiet) {
+      box.innerHTML = '<article class="notice"><strong>暂未生成监控结果</strong><p>GitHub Actions 首次运行后会生成 admissions-status.json。</p></article>';
+    }
   }
-  saveRecords([]);
-  renderHistory();
+}
+
+function saveProfileFromSetup() {
+  const data = {
+    ...defaultProfile,
+    school: $("#setupSchool").value.trim() || defaultProfile.school,
+    major: $("#setupMajor").value.trim() || defaultProfile.major,
+    direction: $("#setupDirection").value.trim() || defaultProfile.direction,
+    examDate: $("#setupExamDate").value || defaultProfile.examDate,
+  };
+  setJson(storage.profile, data);
+  $("#setupScreen").classList.add("hidden");
+  renderAll();
+}
+
+function showResearchResult() {
+  $("#setupSources").innerHTML = `已内置联网检索结果：<br>
+    目标：国科大上海有机化学研究所，070303 有机化学。<br>
+    科目：101 思想政治理论、201 英语一、619 物理化学(甲)、820 有机化学。<br>
+    来源：国科大招生信息网、上海有机所招生信息页。`;
+}
+
+function saveAccount() {
+  const account = { name: $("#accountName").value.trim(), mode: $("#syncMode").value };
+  setJson(storage.account, account);
+  $("#syncNote").textContent =
+    account.mode === "supabase"
+      ? "已选择云同步模式。下一步需要填写 Supabase URL、anon key，并创建 records/storage 表。"
+      : "当前为本机模式：同一浏览器保留记录，不跨设备自动同步。";
 }
 
 function exportHistory() {
-  const records = loadRecords();
-  const blob = new Blob([JSON.stringify(records, null, 2)], {
-    type: "application/json",
-  });
+  const blob = new Blob([JSON.stringify(records(), null, 2)], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `sioc-kaoyan-records-${todayStamp().replaceAll("/", "-")}.json`;
+  link.download = `kaoyan-records-${todayIso()}.json`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
 
-function importHistoryFile(event) {
-  const [file] = event.target.files;
-  if (!file) {
-    return;
-  }
+function importHistory(event) {
+  const [file] = event.target.files || [];
+  if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    try {
-      const imported = JSON.parse(reader.result);
-      if (!Array.isArray(imported)) {
-        throw new Error("记录文件格式不正确");
-      }
-      const records = [...imported, ...loadRecords()];
-      const deduped = Array.from(
-        new Map(records.map((record) => [record.id || `${record.date}-${record.time}`, record])).values()
-      );
-      saveRecords(deduped.slice(0, 300));
-      renderHistory();
-    } catch (error) {
-      alert(error.message || "导入失败，请确认文件是导出的学习记录 JSON。");
-    } finally {
-      event.target.value = "";
-    }
+    const imported = JSON.parse(reader.result);
+    setJson(storage.records, [...imported, ...records()].slice(0, 300));
+    renderAll();
   };
   reader.readAsText(file);
 }
@@ -301,32 +353,21 @@ function bindTabs() {
   });
 }
 
-function addMistake() {
-  const phase = activePhase();
-  const target =
-    $("#phaseSelect").value === "foundation" || $("#phaseSelect").value === "intensive"
-      ? $("#physicalMistakes")
-      : $("#organicMistakes");
-  const item = document.createElement("li");
-  item.textContent = phase.tomorrow;
-  target.prepend(item);
-}
-
+$("#startApp").addEventListener("click", saveProfileFromSetup);
+$("#researchTarget").addEventListener("click", showResearchResult);
 $("#generatePlan").addEventListener("click", renderSchedule);
-$("#studyHours").addEventListener("change", renderSchedule);
-$("#phaseSelect").addEventListener("change", renderSchedule);
-$("#addRow").addEventListener("click", addOverviewRow);
+$("#saveRecord").addEventListener("click", saveRecord);
+$("#recordImages").addEventListener("change", renderImages);
 $("#runAgents").addEventListener("click", runAgents);
-$("#addMistake").addEventListener("click", addMistake);
+$("#checkAdmission").addEventListener("click", () => loadAdmissionStatus(true));
+$("#createWeeklyExam").addEventListener("click", createWeeklyExam);
+$("#saveExamSummary").addEventListener("click", saveExamSummary);
+$("#saveAccount").addEventListener("click", saveAccount);
 $("#historyFilter").addEventListener("change", renderHistory);
 $("#historySearch").addEventListener("input", renderHistory);
-$("#clearHistory").addEventListener("click", clearHistory);
 $("#exportHistory").addEventListener("click", exportHistory);
 $("#importHistory").addEventListener("click", () => $("#historyFile").click());
-$("#historyFile").addEventListener("change", importHistoryFile);
+$("#historyFile").addEventListener("change", importHistory);
 
 bindTabs();
-updateCountdown();
-renderSchedule();
-renderOverview();
-renderHistory();
+boot();

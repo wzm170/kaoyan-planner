@@ -1,0 +1,26 @@
+name: Admission Monitor
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: node tools/check-admissions.mjs
+      - name: Commit monitor result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admissions-status.json .admission-snapshot.json
+          git diff --cached --quiet || git commit -m "Update admission monitor"
+          git push

@@ -3,235 +3,214 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>国科大上海有机所考研指挥中心</title>
+    <title>考研长程备考指挥中心</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <section class="setup-screen" id="setupScreen">
+      <div class="setup-panel">
+        <p class="eyebrow">Before Planning</p>
+        <h1>先确定你的目标院校与专业</h1>
+        <p class="muted">
+          网站会根据目标院校、专业、考试科目和每日反馈生成连续学习计划。当前默认已内置国科大上海有机所 2026 招生信息。
+        </p>
+        <div class="setup-grid">
+          <label>
+            目标学校/院所
+            <input id="setupSchool" value="中国科学院大学 上海有机化学研究所" />
+          </label>
+          <label>
+            目标专业
+            <input id="setupMajor" value="070303 有机化学" />
+          </label>
+          <label>
+            研究方向
+            <input id="setupDirection" value="物理有机/物理化学强化方向" />
+          </label>
+          <label>
+            预计考试日期
+            <input id="setupExamDate" type="date" value="2026-12-19" />
+          </label>
+        </div>
+        <div class="button-row">
+          <button id="researchTarget">联网检索招生信息</button>
+          <button id="startApp">进入备考系统</button>
+        </div>
+        <div class="source-box" id="setupSources">
+          已知 2026 目录：101 思想政治理论、201 英语一、619 物理化学(甲)、820 有机化学。
+        </div>
+      </div>
+    </section>
+
     <header class="topbar">
       <div>
-        <p class="eyebrow">UCAS SIOC Planner</p>
-        <h1>国科大上海有机所考研指挥中心</h1>
+        <p class="eyebrow" id="targetLine">UCAS SIOC Planner</p>
+        <h1>考研长程备考指挥中心</h1>
+        <p class="quote" id="dailyQuote">今天的目标不是把所有事做完，而是把最关键的一步做扎实。</p>
       </div>
       <div class="exam-card">
         <span>距离初试</span>
         <strong id="countdown">计算中</strong>
-        <small>按 2026-12-19 预估</small>
+        <small id="examDateLabel">按目标日期计算</small>
       </div>
     </header>
 
     <main class="layout">
       <aside class="sidebar">
-        <section class="profile-panel">
-          <h2>目标配置</h2>
+        <section class="panel">
+          <h2>账号与同步</h2>
           <label>
-            目标院所
-            <input value="中国科学院大学 上海有机化学研究所" />
+            学习账号
+            <input id="accountName" placeholder="例如 wzm170" />
           </label>
           <label>
-            方向定位
-            <input value="有机化学方向，强化 619 物理化学(甲)" />
-          </label>
-          <label>
-            每日可学时长
-            <select id="studyHours">
-              <option value="10">10 小时</option>
-              <option value="9">9 小时</option>
-              <option value="8">8 小时</option>
-              <option value="7">7 小时</option>
+            同步模式
+            <select id="syncMode">
+              <option value="local">本机模式</option>
+              <option value="supabase">Supabase 云同步</option>
             </select>
           </label>
-          <label>
-            当前阶段
-            <select id="phaseSelect">
-              <option value="foundation">基础搭建</option>
-              <option value="intensive">强化一轮</option>
-              <option value="pastpaper">真题强化</option>
-              <option value="sprint">模拟冲刺</option>
-            </select>
-          </label>
+          <div class="sync-note" id="syncNote">
+            当前记录保存在浏览器。本机模式不跨设备；云同步需要配置 Supabase 免费项目。
+          </div>
+          <button id="saveAccount">保存账号设置</button>
         </section>
 
-        <section class="agent-panel">
-          <h2>AI 考研项目组</h2>
+        <section class="panel">
+          <h2>考试科目</h2>
+          <div class="subject-list" id="subjectList"></div>
+        </section>
+
+        <section class="panel">
+          <h2>AI 项目组</h2>
           <div class="agent-list">
-            <article>
-              <span>总项目经理</span>
-              <strong>计划拆解与优先级</strong>
-            </article>
-            <article>
-              <span>物化教练</span>
-              <strong>公式推导与计算题</strong>
-            </article>
-            <article>
-              <span>有机教练</span>
-              <strong>机理、合成、谱图</strong>
-            </article>
-            <article>
-              <span>英语教练</span>
-              <strong>阅读、翻译、作文</strong>
-            </article>
-            <article>
-              <span>数据管理员</span>
-              <strong>总览表与错题库</strong>
-            </article>
+            <article><span>总项目经理</span><strong>连续计划、优先级、负荷控制</strong></article>
+            <article><span>专业课教练</span><strong>物化推导、有机机理、真题复盘</strong></article>
+            <article><span>考试官</span><strong>每周四科模拟与总结</strong></article>
+            <article><span>情报员</span><strong>每日招生信息检索与变更提醒</strong></article>
+            <article><span>数据管理员</span><strong>记录、图片、趋势分析</strong></article>
           </div>
         </section>
       </aside>
 
       <section class="workspace">
         <nav class="tabs" aria-label="备考模块">
-          <button class="tab active" data-tab="today">今日计划</button>
-          <button class="tab" data-tab="overview">总览表</button>
-          <button class="tab" data-tab="feedback">每日反馈</button>
-          <button class="tab" data-tab="history">学习记录</button>
-          <button class="tab" data-tab="review">错题复盘</button>
+          <button class="tab active" data-tab="today">今日</button>
+          <button class="tab" data-tab="records">记录</button>
+          <button class="tab" data-tab="ai">AI 分析</button>
+          <button class="tab" data-tab="monitor">招生监控</button>
+          <button class="tab" data-tab="exams">真题演练</button>
+          <button class="tab" data-tab="summary">考试总结</button>
         </nav>
 
         <section class="tab-view active" id="today">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Daily Command</p>
-              <h2>今日学习计划</h2>
+              <p class="eyebrow">Daily Chain</p>
+              <h2>今日连续学习计划</h2>
             </div>
             <button id="generatePlan">生成今日计划</button>
           </div>
           <div class="metrics">
-            <article>
-              <span>专业课占比</span>
-              <strong>68%</strong>
-            </article>
-            <article>
-              <span>目标完成率</span>
-              <strong id="targetRate">85%</strong>
-            </article>
-            <article>
-              <span>今日核心</span>
-              <strong id="dailyFocus">物化热力学</strong>
-            </article>
+            <article><span>连续学习</span><strong id="streakDays">0 天</strong></article>
+            <article><span>今日目标</span><strong id="targetRate">85%</strong></article>
+            <article><span>今日核心</span><strong id="dailyFocus">物化热力学</strong></article>
           </div>
           <div class="schedule" id="schedule"></div>
         </section>
 
-        <section class="tab-view" id="overview">
+        <section class="tab-view" id="records">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Master Table</p>
-              <h2>学习计划总览表</h2>
-            </div>
-            <button id="addRow">添加今日记录</button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>日期</th>
-                  <th>阶段</th>
-                  <th>物化</th>
-                  <th>有机</th>
-                  <th>英语</th>
-                  <th>政治</th>
-                  <th>完成率</th>
-                  <th>明日重点</th>
-                </tr>
-              </thead>
-              <tbody id="overviewRows"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="tab-view" id="feedback">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Feedback Loop</p>
-              <h2>每日反馈给 AI 项目组</h2>
-            </div>
-            <button id="runAgents">提交并调整明日计划</button>
-          </div>
-          <form class="feedback-form">
-            <label>
-              今日完成率
-              <input id="completion" type="number" min="0" max="100" value="75" />
-            </label>
-            <label>
-              物化卡点
-              <input id="physicalIssue" value="热力学状态函数推导不稳，计算慢" />
-            </label>
-            <label>
-              有机卡点
-              <input id="organicIssue" value="羰基缩合和重排题型容易混淆" />
-            </label>
-            <label>
-              明日可学习时长
-              <input id="tomorrowHours" type="number" min="4" max="12" value="9" />
-            </label>
-          </form>
-          <div class="agent-output" id="agentOutput">
-            提交反馈后，这里会生成 AI 项目组的明日调整意见。
-          </div>
-        </section>
-
-        <section class="tab-view" id="history">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Learning Archive</p>
-              <h2>过往学习记录</h2>
+              <p class="eyebrow">Learning Log</p>
+              <h2>每日学习记录</h2>
             </div>
             <div class="button-row">
+              <button id="saveRecord">保存今日记录</button>
               <button id="exportHistory">导出记录</button>
               <button id="importHistory">导入记录</button>
-              <button id="clearHistory">清空记录</button>
               <input id="historyFile" type="file" accept="application/json" hidden />
             </div>
           </div>
+          <form class="feedback-form">
+            <label>完成率 <input id="completion" type="number" min="0" max="100" value="75" /></label>
+            <label>学习时长 <input id="studyMinutes" type="number" min="0" value="540" /></label>
+            <label>物化卡点 <input id="physicalIssue" value="热力学状态函数推导不稳，计算慢" /></label>
+            <label>有机卡点 <input id="organicIssue" value="羰基缩合和重排题型容易混淆" /></label>
+            <label>英语/政治状态 <input id="publicIssue" value="英语阅读错在定位，政治选择题概念混淆" /></label>
+            <label>上传图片
+              <input id="recordImages" type="file" accept="image/*" multiple />
+            </label>
+          </form>
+          <div class="image-preview" id="imagePreview"></div>
           <div class="history-toolbar">
             <label>
-              筛选科目
+              筛选
               <select id="historyFilter">
                 <option value="all">全部记录</option>
-                <option value="physical">物化相关</option>
-                <option value="organic">有机相关</option>
                 <option value="low">完成率低于 70%</option>
+                <option value="image">带图片</option>
               </select>
             </label>
-            <label>
-              关键词
-              <input id="historySearch" placeholder="搜索卡点、阶段、明日重点" />
-            </label>
+            <label>关键词 <input id="historySearch" placeholder="搜索卡点、日期、AI 建议" /></label>
           </div>
           <div class="history-list" id="historyList"></div>
         </section>
 
-        <section class="tab-view" id="review">
+        <section class="tab-view" id="ai">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Error Bank</p>
-              <h2>错题复盘</h2>
+              <p class="eyebrow">Free AI Coach</p>
+              <h2>AI 学习记录分析</h2>
             </div>
-            <button id="addMistake">加入复盘任务</button>
+            <button id="runAgents">分析最近记录</button>
           </div>
-          <div class="review-grid">
-            <article>
-              <h3>619 物理化学(甲)</h3>
-              <ul id="physicalMistakes">
-                <li>热力学第一定律路径函数与状态函数辨析</li>
-                <li>相平衡 Clapeyron 方程计算</li>
-              </ul>
-            </article>
-            <article>
-              <h3>820 有机化学</h3>
-              <ul id="organicMistakes">
-                <li>羰基亲核加成与缩合反应条件区分</li>
-                <li>芳香亲电取代定位效应综合题</li>
-              </ul>
-            </article>
-            <article>
-              <h3>英语一</h3>
-              <ul>
-                <li>阅读主旨题先定位段落功能</li>
-                <li>翻译长难句拆分从谓语动词开始</li>
-              </ul>
-            </article>
+          <div class="agent-output" id="agentOutput">
+            内置免费规则 AI 会分析完成率、连续性、卡点与图片记录数量，生成下一步安排。接入免费额度 API 后可升级为大模型分析。
           </div>
+        </section>
+
+        <section class="tab-view" id="monitor">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Admission Monitor</p>
+              <h2>目标院校招生信息监控</h2>
+            </div>
+            <button id="checkAdmission">检查最新监控结果</button>
+          </div>
+          <div class="alert-list" id="admissionAlerts"></div>
+          <div class="source-box">
+            GitHub Actions 每天自动抓取上海有机所招生信息页并生成状态文件。网站打开时读取状态；有变化时显示提醒，没有变化则保持静默。
+          </div>
+        </section>
+
+        <section class="tab-view" id="exams">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Weekly Exam</p>
+              <h2>每周四科真题演练</h2>
+            </div>
+            <button id="createWeeklyExam">生成本周考试</button>
+          </div>
+          <div class="exam-grid" id="weeklyExam"></div>
+        </section>
+
+        <section class="tab-view" id="summary">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Exam Review</p>
+              <h2>考试总结区域</h2>
+            </div>
+            <button id="saveExamSummary">保存总结</button>
+          </div>
+          <form class="feedback-form">
+            <label>政治得分 <input id="scorePolitics" type="number" min="0" max="100" value="65" /></label>
+            <label>英语一得分 <input id="scoreEnglish" type="number" min="0" max="100" value="68" /></label>
+            <label>619 物化得分 <input id="scorePhysical" type="number" min="0" max="150" value="105" /></label>
+            <label>820 有机得分 <input id="scoreOrganic" type="number" min="0" max="150" value="110" /></label>
+            <label class="wide">考试问题总结 <textarea id="examReflection">物化大题计算慢；有机合成路线缺少逆合成拆解。</textarea></label>
+          </form>
+          <div class="agent-output" id="examAdvice">保存后生成考试总结。</div>
         </section>
       </section>
     </main>
