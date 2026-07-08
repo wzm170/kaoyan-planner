@@ -24,6 +24,12 @@ const storage = {
   ai: "kaoyan.ai.v2",
 };
 
+const defaultSupabase = {
+  url: "https://uoptsqpbhcezhvfdqpgc.supabase.co",
+  anonKey:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvcHRzcXBiaGNlemh2ZmRxcGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0OTI1NzUsImV4cCI6MjA5OTA2ODU3NX0.aMClrqOmUWzkbG5DHWC-v-JbEeB-2-nnfqGoc0IbhXo",
+};
+
 const quotes = [
   "今天的目标不是把所有事做完，而是把最关键的一步做扎实。",
   "分数来自每天可复现的动作，不来自临时的情绪。",
@@ -78,11 +84,11 @@ function records() {
 }
 
 function supabaseConfig() {
-  return getJson(storage.supabase, { url: "", anonKey: "" });
+  return { ...defaultSupabase, ...getJson(storage.supabase, {}) };
 }
 
 function accountConfig() {
-  return getJson(storage.account, { name: "", email: "", mode: "local" });
+  return { name: "wzm170", email: "", mode: "supabase", ...getJson(storage.account, {}) };
 }
 
 function supabaseClient() {
