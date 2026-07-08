@@ -2,3 +2,5 @@ tunnel.log
 tunnel.err.log
 *.tmp
 *.bak
+.supabase-db-password.local
+supabase/.temp/
